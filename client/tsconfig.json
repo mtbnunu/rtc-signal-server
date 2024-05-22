@@ -1,0 +1,15 @@
+{
+  "compilerOptions": {
+    "target": "ESNext",
+    "module": "ESNext",
+    "moduleResolution": "Node",
+    "strict": true,
+    "esModuleInterop": true,
+    "skipLibCheck": true,
+    "forceConsistentCasingInFileNames": true,
+    "jsx": "react-jsx",
+    "sourceMap": true
+  },
+  "include": ["./src/**/*.ts", "src/**/*.tsx"],
+  "files": ["src/index.tsx", "./src/cms/widgets/ImageWidget.1.tsx"]
+}
