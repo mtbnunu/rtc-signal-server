@@ -15,12 +15,16 @@
 import { useConnectionHandler } from "../composables/useConnectionHandler.ts"
 import { useStateMachine } from "../composables/useStateMachine.ts"
 
-const { createRoom, joinRoom, onConnected } = useConnectionHandler()
+const route = useRoute();
+const prefill = computed(() => {
+  return route.path?.split?.("/")?.[1] || ''
+})
+
+const { createRoom, joinRoom, onConnected, errorText } = useConnectionHandler()
 const { goto } = useStateMachine()
 
 const err = ref("")
-
-const joinRoomId = ref('')
+const joinRoomId = ref("")
 
 const host = () => {
   createRoom();
@@ -28,16 +32,24 @@ const host = () => {
 }
 const join = async () => {
   err.value = ""
-  try {
-    joinRoom(joinRoomId.value)
-    onConnected(() => {
-      console.log("JOINED")
-      goto("waiting")
-    })
-  }
-  catch (e) {
-    err.value = "Failed to join room"
-  }
+  const to = setTimeout(() => {
+    err.value = "no man";
+    joinRoomId.value = ""
+  }, 3000)
+  joinRoom(joinRoomId.value)
+  onConnected(() => {
+    clearTimeout(to)
+    console.log("JOINED")
+    goto("waiting")
+  })
 }
+
+onMounted(() => {
+  if (prefill.value) {
+    joinRoomId.value = prefill.value
+    join()
+  }
+})
+
 </script>
 <style></style>

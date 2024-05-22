@@ -110,11 +110,12 @@ export class SkullKingCalcStack extends cdk.Stack {
 
       // Set environment variables for the message handler Lambda function
       const domain = apiDomain ? FQDN : webSocketApi.apiEndpoint;
-      messageHandler.addEnvironment(
-        "DOMAIN_NAME",
-        webSocketApi.apiEndpoint.replace("wss://", "")
-      );
-      messageHandler.addEnvironment("STAGE", webSocketStage.stageName);
+      messageHandler.addEnvironment("DOMAIN_NAME", domain);
+      messageHandler.addEnvironment("STAGE", "");
+
+      new cdk.CfnOutput(this, "Domain", {
+        value: domain,
+      });    
     } else {
       messageHandler.addEnvironment(
         "DOMAIN_NAME",

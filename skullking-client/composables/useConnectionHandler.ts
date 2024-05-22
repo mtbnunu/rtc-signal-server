@@ -1,7 +1,10 @@
 import { ref, onUnmounted } from "vue";
 
 const signalServer =
-  "wss://urmdrodnf9.execute-api.us-east-1.amazonaws.com/dev/"; // Replace with your actual signal server URL
+  // "wss://urmdrodnf9.execute-api.us-east-1.amazonaws.com/dev/";
+  "wss://wrtc.api.jaeb.ae/";
+
+const appId = "skk" + new Date();
 
 type sendChannel = {
   send: (target: string, data: any) => void;
@@ -160,6 +163,13 @@ const createRoom = () => {
         myId.value = message.roomId;
         break;
       case "newJoiner":
+        if (message.app !== appId) {
+          console.log("request receivd with mismatching app");
+          socket.value?.send(
+            JSON.stringify({ action: "reject", targetId: message.sourceId })
+          );
+          break;
+        }
         await handleNewJoiner(message.sourceId, withSocket(socket.value!));
         break;
       case "answer":
@@ -220,13 +230,18 @@ const joinRoom = async (_roomId: string) => {
 
   socket.value.onopen = () => {
     console.log("WebSocket connection opened for joiner");
-    socket.value?.send(JSON.stringify({ action: "joinRoom", roomId: _roomId }));
+    socket.value?.send(
+      JSON.stringify({ action: "joinRoom", roomId: _roomId, app: appId })
+    );
   };
 
   socket.value.onmessage = async (event) => {
     const message = JSON.parse(event.data);
     console.log("Received WebSocket message:", message);
     switch (message.action) {
+      case "reject":
+        console.log("request rejected");
+      // need to notify caller somehow
       case "offer":
         myId.value = message.targetId;
         await handleOffer(
