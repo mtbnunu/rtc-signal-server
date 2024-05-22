@@ -8,7 +8,7 @@
     </li>
   </ul>
   <div v-if="isHost">
-    <button @click="closeRoom">
+    <button @click="startgame">
       Start Game
     </button>
   </div>
@@ -18,9 +18,18 @@
 import { useConnectionHandler } from "../composables/useConnectionHandler.ts"
 import { useStateMachine } from "../composables/useStateMachine.ts"
 
-const { roomId, peerConnections, closeRoom, isHost } = useConnectionHandler();
+const { roomId, peerConnections, closeRoom, isHost, onData } = useConnectionHandler();
 const { goto } = useStateMachine()
 
+onData((d) => {
+  if (d.data?.action === "start") {
+    goto("playing")
+  }
+})
+
+const startgame = () => {
+  closeRoom()
+}
 
 </script>
 <style></style>

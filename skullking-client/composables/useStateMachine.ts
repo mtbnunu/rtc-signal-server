@@ -1,5 +1,6 @@
 import Waiting from "~/components/Waiting.vue";
 import Initial from "~/components/Initial.vue";
+import Playing from "~/components/Playing.vue";
 
 const states = {
   initial: {
@@ -8,8 +9,9 @@ const states = {
   waiting: {
     screen: Waiting,
   },
-  join: {},
-  playing: {},
+  playing: {
+    screen: Playing,
+  },
 };
 
 const currentStateName = ref<keyof typeof states>("initial");

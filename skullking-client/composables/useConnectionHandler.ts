@@ -7,6 +7,12 @@ type sendChannel = {
   send: (target: string, data: any) => void;
 };
 
+type CallbackType<T = unknown> = {
+  callback: (data: T) => void;
+  once: boolean;
+  ran?: boolean;
+};
+
 const withSocket = (socket: WebSocket): sendChannel => {
   return {
     send: (target: string, data: any) => {
@@ -18,7 +24,12 @@ const withSocket = (socket: WebSocket): sendChannel => {
 const withRtcRelay = (): sendChannel => {
   return {
     send: (target: string, data: any) => {
-      send(roomId.value!, { data, targetId: target, action: "relay" });
+      send(roomId.value!, {
+        data: { ...data, ns: "connection" },
+        targetId: target,
+        action: "relay",
+        ns: "connection",
+      });
     },
   };
 };
@@ -33,9 +44,10 @@ const peerConnections = ref<
   Record<string, RTCPeerConnection & { dataChannel?: any }>
 >({});
 const iceCandidateQueues = ref<Record<string, any[]>>({});
-const onDataCallback = ref<((d: any) => void)[]>([]);
-const onConnectedCallback = ref<((d: any) => void)[]>([]);
-const onDisconnectedCallback = ref<((d: any) => void)[]>([]);
+
+const onDataCallback = ref<CallbackType[]>([]);
+const onConnectedCallback = ref<CallbackType<RTCPeerConnection>[]>([]);
+const onDisconnectedCallback = ref<CallbackType<RTCPeerConnection>[]>([]);
 
 const closeWebsocket = () => {
   console.log("Closing Websocket");
@@ -47,9 +59,13 @@ const closeWebsocket = () => {
 
 const onWebRTCReceived = async (data: any) => {
   console.log("Received data:", data);
-  onDataCallback.value.forEach((callback) => callback(data));
+  onDataCallback.value.forEach((c) => {
+    if (c.once && c.ran) return;
+    c.callback(data);
+    c.ran = true;
+  });
 
-  if (data.action) {
+  if (data.ns === "connection" && data.action) {
     switch (data.action) {
       case "relay":
         send(data.targetId, data.data);
@@ -73,20 +89,31 @@ const onWebRTCReceived = async (data: any) => {
   }
 };
 
-const onData = (callback: (d: any) => void) => {
-  onDataCallback.value.push(callback);
+const onData = (
+  callback: CallbackType["callback"],
+  options: Omit<CallbackType, "callback">
+) => {
+  onDataCallback.value.push({ callback, ...options });
 };
 
-const offData = (callback: (d: any) => void) => {
-  onDataCallback.value = onDataCallback.value.filter((x) => x !== callback);
+const offData = (callback: CallbackType["callback"]) => {
+  onDataCallback.value = onDataCallback.value.filter(
+    (x) => x.callback !== callback
+  );
 };
 
-const onConnected = (callback: (d: any) => void) => {
-  onConnectedCallback.value.push(callback);
+const onConnected = (
+  callback: CallbackType<RTCPeerConnection>["callback"],
+  options: Omit<CallbackType<RTCPeerConnection>, "callback">
+) => {
+  onConnectedCallback.value.push({ callback, ...options });
 };
 
-const onDisconnected = (callback: (d: any) => void) => {
-  onDisconnectedCallback.value.push(callback);
+const onDisconnected = (
+  callback: CallbackType<RTCPeerConnection>["callback"],
+  options: Omit<CallbackType<RTCPeerConnection>, "callback">
+) => {
+  onDisconnectedCallback.value.push({ callback, ...options });
 };
 
 const send = (remoteConnectionId: string, data: any) => {
@@ -97,6 +124,18 @@ const send = (remoteConnectionId: string, data: any) => {
   } else {
     console.log("Data channel is not open");
   }
+};
+
+const broadcast = (data: any) => {
+  const message = {
+    data,
+    sourceId: myId.value,
+  };
+  Object.keys(peerConnections.value).forEach((id) => {
+    send(id, message);
+  });
+  //loopback for self
+  onWebRTCReceived(message);
 };
 
 const createRoom = () => {
@@ -161,6 +200,9 @@ const closeRoom = () => {
     );
     closeWebsocket();
   }
+  broadcast({
+    action: "start",
+  });
 };
 
 const joinRoom = async (_roomId: string) => {
@@ -216,7 +258,7 @@ const handleNewJoiner = async (sourceId: string, channel: sendChannel) => {
 
   channel.send(sourceId, {
     action: "offer",
-    sourceId: myId.value, //myid
+    sourceId: myId.value,
     sdp: offer,
   });
 };
@@ -237,6 +279,7 @@ const handleOffer = async (
 
   sendChannel.send(roomId, {
     action: "answer",
+    sourceId: myId.value,
     sdp: answer,
   });
 };
@@ -318,15 +361,21 @@ const startWebRTC = async (peerConnection: any, remoteConnectionId: string) => {
     dataChannel.onopen = () => {
       console.log("Data channel is open");
       peerConnections.value[remoteConnectionId].dataChannel = dataChannel;
-      onConnectedCallback.value.forEach((callback) => callback(peerConnection));
+      onConnectedCallback.value.forEach((c) => {
+        if (c.once && c.ran) return;
+        c.callback(peerConnection);
+        c.ran = true;
+      });
 
       notifyExistingPeers(remoteConnectionId);
     };
     dataChannel.onclose = () => {
       console.log("Data channel is closed");
-      onDisconnectedCallback.value.forEach((callback) =>
-        callback(peerConnection)
-      );
+      onDisconnectedCallback.value.forEach((c) => {
+        if (c.once && c.ran) return;
+        c.callback(peerConnection);
+        c.ran = true;
+      });
     };
     dataChannel.onmessage = (event: any) =>
       onWebRTCReceived(JSON.parse(event.data));
@@ -335,16 +384,20 @@ const startWebRTC = async (peerConnection: any, remoteConnectionId: string) => {
       const dataChannel = event.channel;
       dataChannel.onopen = () => {
         console.log("Data channel is open");
-        onConnectedCallback.value.forEach((callback) =>
-          callback(peerConnection)
-        );
+        onConnectedCallback.value.forEach((c) => {
+          if (c.once && c.ran) return;
+          c.callback(peerConnection);
+          c.ran = true;
+        });
         peerConnections.value[remoteConnectionId].dataChannel = dataChannel;
       };
       dataChannel.onclose = () => {
         console.log("Data channel is closed");
-        onDisconnectedCallback.value.forEach((callback) =>
-          callback(peerConnection)
-        );
+        onDisconnectedCallback.value.forEach((c) => {
+          if (c.once && c.ran) return;
+          c.callback(peerConnection);
+          c.ran = true;
+        });
       };
       dataChannel.onmessage = (event: any) =>
         onWebRTCReceived(JSON.parse(event.data));
@@ -361,6 +414,7 @@ const notifyExistingPeers = (newConnectionId: string) => {
       if (connectionId !== newConnectionId) {
         send(connectionId, {
           action: "newPeer",
+          ns: "connection",
           sourceId: newConnectionId,
         });
       }
@@ -383,6 +437,7 @@ export function useConnectionHandler() {
     onData,
     offData,
     send,
+    broadcast,
     createRoom,
     joinRoom,
     closeRoom,
