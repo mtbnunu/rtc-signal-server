@@ -13,6 +13,8 @@ type sendChannel = {
 
 type CallbackType<T = any> = (data: T) => void;
 
+const { open: openSnackbar } = useSnackbar();
+
 const withSocket = (socket: WebSocket): sendChannel => {
   return {
     send: (target: string, data: any) => {
@@ -40,21 +42,19 @@ type ExtendedPeerConnection = RTCPeerConnection & {
   id: string;
 };
 
-const profiles = useProfile();
-
 const isHost = ref(true);
 const isInitialized = ref(false);
 const isReady = ref(false);
 const roomId = ref<string | undefined>();
 const myId = ref<string | undefined>();
 const socket = ref<WebSocket | undefined>();
-const closeRoom = ref<() => void | undefined>();
 const peerConnections = ref<Record<string, ExtendedPeerConnection>>({});
 const iceCandidateQueues = ref<Record<string, any[]>>({});
 
 const onDataCallback = ref<CallbackType[]>([]);
 const onConnectedCallback = ref<CallbackType<ExtendedPeerConnection>[]>([]);
 const onDisconnectedCallback = ref<CallbackType<ExtendedPeerConnection>[]>([]);
+const onCloseRoomCallback = ref<CallbackType<void>[]>([]);
 
 const closeWebsocket = () => {
   if (socket.value) {
@@ -128,20 +128,14 @@ const send = (remoteConnectionId: string, data: any) => {
 };
 
 const broadcast = (data: any) => {
-  const message = {
-    data,
-    sourceId: myId.value,
-  };
   Object.keys(peerConnections.value).forEach((id) => {
-    send(id, message);
+    send(id, data);
   });
   //loopback for self
-  onWebRTCReceived(message);
+  onWebRTCReceived({ ...data, sourceId: myId.value });
 };
 
-const createRoom = async (
-  timeout = 30000
-): Promise<{ closeRoom: () => void }> => {
+const createRoom = async (timeout = 30000): Promise<void> => {
   return new Promise((resolve, reject) => {
     if (isInitialized.value) {
       return reject(new Error("Already initialized"));
@@ -167,8 +161,8 @@ const createRoom = async (
       clearTimeout(timeoutId);
     });
 
-    const _closeRoom = () => {
-      console.log("close room");
+    onCloseRoomCallback.value.push(() => {
+      console.log("close room!!!");
       if (!isHost.value || !isInitialized.value) {
         return;
       }
@@ -180,10 +174,7 @@ const createRoom = async (
         );
         cleanUp();
       }
-      broadcast({
-        action: "start",
-      });
-    };
+    });
 
     localSocket.onopen = () => {
       console.log("WebSocket connection opened as host");
@@ -198,8 +189,7 @@ const createRoom = async (
           roomId.value = message.roomId;
           myId.value = message.roomId;
           clearTimeout(timeoutId);
-          closeRoom.value = _closeRoom;
-          resolve({ closeRoom: _closeRoom });
+          resolve();
           break;
         case "newJoiner":
           if (message.app !== appId) {
@@ -497,7 +487,10 @@ const startWebRTC = async (
   peerConnection.onconnectionstatechange = () => {
     console.log("Connection state change:", peerConnection.connectionState);
     if (peerConnection.connectionState === "connected") {
-      console.log("Peer connection is fully connected.", peerConnection.id);
+      console.log(
+        "Peer connection is fully connected.",
+        (peerConnection as ExtendedPeerConnection).id
+      );
       if (!isHost.value) {
         closeWebsocket();
       }
@@ -582,20 +575,29 @@ const notifyExistingPeers = (newConnectionId: string) => {
 };
 
 onConnected((peer) => {
+  const profiles = useProfile();
+
   console.log("connected so sending ", peer);
   send(peer.id, {
     action: "iam",
     data: profiles.me.value,
   });
+  setTimeout(() => {
+    openSnackbar(`${profiles.getUserProfile(peer.id)?.name} joined`);
+  }, 500);
 });
 
 onData((data) => {
+  const profiles = useProfile();
+
+  console.log(data);
   if (data.action === "iam") {
     profiles.updateUserProfile(data.sourceId, data.data);
   }
+  if (data.action === "start") {
+    onCloseRoomCallback.value.forEach((x) => x());
+  }
 });
-
-window.broadcast = broadcast;
 
 export function useConnectionHandler() {
   return {
@@ -613,7 +615,6 @@ export function useConnectionHandler() {
     joinRoom,
     onConnected,
     onDisconnected,
-    closeRoom,
     myId,
   };
 }

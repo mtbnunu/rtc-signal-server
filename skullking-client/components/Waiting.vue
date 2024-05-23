@@ -5,11 +5,6 @@
 
 
   </v-tabs>
-  {{ myId }}<br />
-  {{ peerConnections }}<br />
-  {{ users }}
-  <!-- {{ peerConnections }}
-  {{ users }} -->
   <v-card-text>
     <v-tabs-window v-model="tab">
       <v-tabs-window-item value="room">
@@ -35,7 +30,12 @@
           <template v-slot:prepend>
             <v-avatar :image="`/characters/${me.image}.webp`" size="60"></v-avatar>
           </template>
-          ME: {{ me.name }}
+          {{ me.name }}
+          <template v-slot:append>
+
+            <v-btn icon="$edit" variant="plain" size="small" class="muted" @click="openEditProfile">
+            </v-btn>
+          </template>
         </v-list-item>
         <v-divider />
 
@@ -56,8 +56,8 @@
   </v-card-text>
 
 
-  <div v-if="isHost">
-    <v-btn @click="startgame" :disabled="!closeRoom" block size="x-large" variant="tonal">
+  <div>
+    <v-btn @click="startgame" block size="large" variant="tonal">
       Start Game
     </v-btn>
   </div>
@@ -67,10 +67,19 @@
 import { useConnectionHandler } from "../composables/useConnectionHandler.ts"
 import { useStateMachine } from "../composables/useStateMachine.ts"
 import { useProfile } from "../composables/useProfile"
-
-const { roomId, peerConnections, isHost, onData, isInitialized, closeRoom, myId } = useConnectionHandler();
+const { me, users, openEditProfile } = useProfile()
+const { roomId, peerConnections, broadcast, onData, isInitialized, closeRoom, myId, isHost } = useConnectionHandler();
 const { goto } = useStateMachine()
-const tab = ref()
+
+const tab = ref(isHost ? "room" : "player")
+watch(isHost, (n, o) => {
+  if (n !== o)
+    if (n) {
+      tab.value = "room"
+    } else {
+      tab.value = "player"
+    }
+}, { immediate: true })
 
 const { open } = useSnackbar()
 
@@ -78,7 +87,7 @@ const shareLink = computed(() => `${window.location.protocol}//${window.location
 const qrCodeUrl = computed(() => `https://quickchart.io/qr?text=${encodeURIComponent(shareLink.value)}&ecLevel=L&margin=2&size=200&format=svg`)
 
 onData((d) => {
-  if (d.data?.action === "start") {
+  if (d.action === "start") {
     goto("playing")
   }
 })
@@ -91,12 +100,9 @@ const select = (e) => {
 }
 
 const startgame = () => {
-  if (closeRoom.value) {
-    closeRoom.value()
-  }
+  broadcast({ action: "start" })
 }
 
-const { users, me } = useProfile()
 
 const peers = computed(() => {
   return Object.keys(peerConnections.value).map(p => {

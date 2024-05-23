@@ -2,10 +2,12 @@
   <v-app>
     <component :is="current.screen" />
 
+    <ProfileDialog />
 
     <v-snackbar v-model="snackbar" :timeout="timeout">
-      {{ text }}
-
+      <p v-for="text in texts" :key="text">
+        {{ text }}
+      </p>
       <template v-slot:actions>
         <v-btn color="blue" variant="text" @click="hasErr = false">
           Close
@@ -19,7 +21,7 @@
 import { useStateMachine } from "./composables/useStateMachine"
 import { useSnackbar } from "./composables/useSnackbar"
 const { current } = useStateMachine()
-const { snackbar, text, timeout } = useSnackbar()
+const { snackbar, texts, timeout } = useSnackbar()
 </script>
 
 <style>

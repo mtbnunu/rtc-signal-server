@@ -2,7 +2,18 @@
   <div class="container">
 
     <h1>Skull King Calculator</h1>
-    <div>
+    <v-sheet border rounded class="my-4 pa-4">
+      <div class="center muted">
+        Pick your name
+      </div>
+      <div class="d-flex ga-8 align-center ">
+        <v-avatar :image="`/characters/${me.image}.webp`" size="60"></v-avatar>
+        <div class="align-center text-h6">{{ me.name }}</div>
+        <v-btn icon="$edit" variant="plain" size="small" class="muted" @click="openEditProfile">
+        </v-btn>
+      </div>
+    </v-sheet>
+    <div class="pt-12">
       <v-btn prepend-icon="$plus" variant="tonal" block @click="host" size="large" :loading="loading">
         Host New Game
       </v-btn>
@@ -35,7 +46,7 @@ const prefill = computed(() => {
 
 const { createRoom, joinRoom, onConnected, errorText, broadcast } = useConnectionHandler()
 const { goto } = useStateMachine()
-
+const { me, openEditProfile } = useProfile()
 const joinRoomId = ref("")
 const loading = ref(false)
 
@@ -86,6 +97,10 @@ h1 {
   text-align: center;
   margin-top: 1em;
   margin-bottom: 1em;
+}
+
+.muted {
+  color: #aaa;
 }
 
 .roomcode {

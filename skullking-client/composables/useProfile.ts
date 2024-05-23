@@ -22,6 +22,7 @@ const animals = [
   "squirrel",
   "penguin",
   "frog",
+  "dolphin",
 ];
 
 const adjectives = [
@@ -184,11 +185,16 @@ export const randomProfile = () => {
 
 const users = ref<{ [key: string]: profile }>({});
 const me = ref<profile>(randomProfile());
+const editing = ref(false);
 
 export const useProfile = () => {
+  const { broadcast } = useConnectionHandler();
+
   return {
-    me,
-    users,
+    me: computed(() => me.value),
+    users: computed(() => users.value),
+    editing,
+    animals,
     getMyProfile() {
       return me.value;
     },
@@ -200,6 +206,10 @@ export const useProfile = () => {
     },
     updateMyProfile(profile: profile) {
       me.value = profile;
+      broadcast({ action: "iam", data: me.value });
+    },
+    openEditProfile() {
+      editing.value = true;
     },
   };
 };
