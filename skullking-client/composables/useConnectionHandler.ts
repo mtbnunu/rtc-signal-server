@@ -56,12 +56,8 @@ const onConnectedCallback = ref<CallbackType<ExtendedPeerConnection>[]>([]);
 const onDisconnectedCallback = ref<CallbackType<ExtendedPeerConnection>[]>([]);
 const onCloseRoomCallback = ref<CallbackType<void>[]>([]);
 
-const closeWebsocket = () => {
-  if (socket.value) {
-    console.log("Closing Websocket");
-    socket.value.close();
-    socket.value = undefined;
-  }
+const closeRoom = () => {
+  onCloseRoomCallback.value.forEach((x) => x());
 };
 
 const onWebRTCReceived = async (data: any) => {
@@ -89,6 +85,20 @@ const onWebRTCReceived = async (data: any) => {
         break;
     }
   }
+};
+
+const useDataListener = (action: string, callback: CallbackType) => {
+  const handler = (data: any) => {
+    if (data.action === action) {
+      callback(data);
+    }
+  };
+  onMounted(() => {
+    onData(handler);
+  });
+  onUnmounted(() => {
+    offData(handler);
+  });
 };
 
 const onData = (callback: CallbackType) => {
@@ -590,12 +600,8 @@ onConnected((peer) => {
 onData((data) => {
   const profiles = useProfile();
 
-  console.log(data);
   if (data.action === "iam") {
     profiles.updateUserProfile(data.sourceId, data.data);
-  }
-  if (data.action === "start") {
-    onCloseRoomCallback.value.forEach((x) => x());
   }
 });
 
@@ -616,5 +622,7 @@ export function useConnectionHandler() {
     onConnected,
     onDisconnected,
     myId,
+    useDataListener,
+    closeRoom,
   };
 }

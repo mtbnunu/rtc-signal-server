@@ -3,6 +3,7 @@
     <component :is="current.screen" />
 
     <ProfileDialog />
+    <ConcurCountdown />
 
     <v-snackbar v-model="snackbar" :timeout="timeout">
       <p v-for="text in texts" :key="text">
@@ -20,6 +21,7 @@
 <script setup>
 import { useStateMachine } from "./composables/useStateMachine"
 import { useSnackbar } from "./composables/useSnackbar"
+import ConcurCountdown from "./components/ConcurCountdown.vue";
 const { current } = useStateMachine()
 const { snackbar, texts, timeout } = useSnackbar()
 </script>
@@ -30,8 +32,6 @@ const { snackbar, texts, timeout } = useSnackbar()
 }
 
 .container {
-  padding: 1em;
   min-width: 350px;
-  margin: auto;
 }
 </style>

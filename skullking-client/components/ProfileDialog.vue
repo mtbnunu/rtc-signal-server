@@ -9,7 +9,7 @@
           <v-avatar :image="`/characters/${current.image}.webp`" size="60"></v-avatar>
           <v-text-field v-model="current.name" label="Name"> </v-text-field>
         </div>
-        <div>
+        <div class="d-flex flex-wrap justify-center">
           <v-avatar v-for="animal in animals" :key="animal" :image="`/characters/${animal}.webp`" size="60"
             class="ma-2 center" :class="{ 'selected': animal === current.image }"
             @click="() => current.image = animal"></v-avatar>
@@ -47,6 +47,7 @@ const saveAndClose = () => {
 
 <style>
 .selected {
-  outline: solid 2px #555;
+  outline: solid 3px #fff;
+  box-shadow: 0px 0px 0px 5px #878787 !important;
 }
 </style>

@@ -1,37 +1,39 @@
 <template>
-  <div class="container">
+  <div class="vcenter">
+    <div class="container">
 
-    <h1>Skull King Calculator</h1>
-    <v-sheet border rounded class="my-4 pa-4">
-      <div class="center muted">
-        Pick your name
-      </div>
-      <div class="d-flex ga-8 align-center ">
-        <v-avatar :image="`/characters/${me.image}.webp`" size="60"></v-avatar>
-        <div class="align-center text-h6">{{ me.name }}</div>
-        <v-btn icon="$edit" variant="plain" size="small" class="muted" @click="openEditProfile">
+      <h1>Title</h1>
+      <v-sheet border rounded class="my-4 pa-4">
+        <div class="center muted">
+          Pick your name
+        </div>
+        <div class="d-flex ga-8 align-center ">
+          <v-avatar :image="`/characters/${me.image}.webp`" size="60"></v-avatar>
+          <div class="align-center text-h6">{{ me.name }}</div>
+          <v-btn icon="$edit" variant="plain" size="small" class="muted" @click="openEditProfile">
+          </v-btn>
+        </div>
+      </v-sheet>
+      <div class="pt-12">
+        <v-btn prepend-icon="$plus" variant="tonal" block @click="host" size="x-large" :loading="loading"
+          color="primary">
+          Host New Game
         </v-btn>
       </div>
-    </v-sheet>
-    <div class="pt-12">
-      <v-btn prepend-icon="$plus" variant="tonal" block @click="host" size="large" :loading="loading">
-        Host New Game
+
+      <div class="or">
+        or
+      </div>
+
+      <v-text-field v-model="joinRoomId" type="text" single-line variant="outlined" label="Enter Room Code" clearable
+        class="roomcode" />
+      <v-btn prepend-icon="$next" variant="tonal" block @click="join" :loading="loading" size="x-large" color="primary">
+        Join
+
       </v-btn>
+
     </div>
-
-    <div class="or">
-      or
-    </div>
-
-    <v-text-field v-model="joinRoomId" type="text" single-line variant="outlined" label="Enter Room Code" clearable
-      class="roomcode" />
-    <v-btn prepend-icon="$next" variant="tonal" block @click="join" :loading="loading" size="large">
-      Join
-
-    </v-btn>
-
   </div>
-
 </template>
 <script setup>
 
