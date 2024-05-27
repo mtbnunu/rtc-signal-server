@@ -1,14 +1,6 @@
-# Welcome to your CDK TypeScript project
+# RTC Signal Server
+this is cdk app for creating a signal server on aws for webrtc.
+websocket is used to communicate offer, answers, and signals between peers.
+this websocket connection is designed to be disconnected as soon as webrtc connection has been made.
 
-This is a blank project for CDK development with TypeScript.
-
-The `cdk.json` file tells the CDK Toolkit how to execute your app.
-
-## Useful commands
-
-* `npm run build`   compile typescript to js
-* `npm run watch`   watch for changes and compile
-* `npm run test`    perform the jest unit tests
-* `npx cdk deploy`  deploy this stack to your default AWS account/region
-* `npx cdk diff`    compare deployed stack with current state
-* `npx cdk synth`   emits the synthesized CloudFormation template
+There is no state or database with this. `room id` to be used is host's websocket connectionid.
