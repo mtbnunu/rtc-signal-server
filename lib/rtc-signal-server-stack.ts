@@ -8,7 +8,7 @@ import * as route53 from "aws-cdk-lib/aws-route53";
 import * as route53_targets from "aws-cdk-lib/aws-route53-targets";
 import * as iam from "aws-cdk-lib/aws-iam";
 
-export class SkullKingCalcStack extends cdk.Stack {
+export class RTCSignalServer extends cdk.Stack {
   constructor(scope: Construct, id: string, props?: cdk.StackProps) {
     super(scope, id, props);
 
@@ -115,7 +115,7 @@ export class SkullKingCalcStack extends cdk.Stack {
 
       new cdk.CfnOutput(this, "Domain", {
         value: domain,
-      });    
+      });
     } else {
       messageHandler.addEnvironment(
         "DOMAIN_NAME",

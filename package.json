@@ -1,9 +1,10 @@
 {
-  "name": "skullking-calc",
+  "name": "rtc-signal-server",
   "version": "0.1.0",
   "bin": {
-    "skullking-calc": "bin/skullking-calc.js"
+    "rtc-signal-server": "bin/rtc-signal-server.js"
   },
+  "private": true,
   "scripts": {
     "build": "tsc",
     "watch": "tsc -w",
